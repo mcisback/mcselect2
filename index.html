@@ -50,19 +50,103 @@
             <option value="58220">Palagiano</option>
             <option value="58221">Palagonia</option>
           </select>
+
+          <br>
+          <br>
+
+          <div id="customDiv"></div>
+
+          <br>
+          <br>
+
+          <div id="customDiv2"></div>
         </form>
     </div>
 
     <script src="mcselect2.js"></script>
     <script>
-        let ms2 = new MCSelect2({
+        // Get Data From Select Element
+        const ms2 = new MCSelect2({
             selectBackground: 'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(174,174,174,1) 91%)',
             debug: false,
-            onTyping: (data) => { console.log('onTyping data: ', data) },
+            onTyping: (data) => { console.log('MS2, onTyping data: ', data) },
+        })
+
+        const ms3 = new MCSelect2({
+            selectBackground: 'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(174,174,174,1) 91%)',
+            debug: false,
+            source: 'data',
+            data: () => {
+                return [
+                    {
+                        id: 1,
+                        text: 'Formaggio',
+                    },
+                    {
+                        id: 2,
+                        text: 'Capra',
+                        isSelected: true,
+                    },
+                    {
+                        id: 3,
+                        text: 'New York',
+                    },
+                    {
+                        id: 4,
+                        text: 'Yogurt',
+                    },
+                ]
+            },
+            hideOriginalSelect: false,
+            processRow: ($row) => {
+                console.log('$row: ', $row)
+
+                return {
+                    optionValue: $row.id,
+                    optionText: $row.text,
+                    isOptionSelected: $row.selected ? $row.selected : false,
+                }
+            },
+            onTyping: (data) => { console.log('MS3, onTyping data: ', data) },
+        })
+
+        // Fetch Data From Api
+        const ms4 = new MCSelect2({
+            selectBackground: 'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(174,174,174,1) 91%)',
+            debug: true,
+            source: 'data',
+            isAsync: true,
+            data: async () => {
+                let $data = await fetch('https://jsonplaceholder.typicode.com/users')
+                    .then(response => response.json())
+                    .then(json => json.map((row) => {
+                        return {
+                            id: row.id,
+                            username: row.username,
+                        }
+                }));
+                
+                console.log('$data: ', $data);
+
+                return $data;
+            },
+            hideOriginalSelect: false,
+            processRow: ($row) => {
+                console.log('$row: ', $row)
+
+                return {
+                    optionValue: $row.id,
+                    optionText: $row.username,
+                    isOptionSelected: false,
+                }
+            },
+            onTyping: (data) => { console.log('MS3, onTyping data: ', data) },
         })
 
         document.addEventListener('DOMContentLoaded', () => {
             ms2.attach('#mySelect');
+            ms3.attach('#customDiv');
+            ms4.attach('#customDiv2');
 
             
             // Attach Event on standard select
@@ -72,9 +156,17 @@
             }); */
 
             // Attach Event On Custom Event
-            document.addEventListener('mcselect2-option-selected', (ev) => {
+            ms2.addEventListener('mcselect2-option-selected', (ev) => {
                 const selectedOption = ev.detail.selectedOption
                 console.log('#mySelect value changed: ', selectedOption)
+                
+                document.getElementById('showSelected').innerHTML = selectedOption.text
+            });
+
+            // Attach Event On Custom Event
+            ms3.addEventListener('mcselect2-option-selected', (ev) => {
+                const selectedOption = ev.detail.selectedOption
+                console.log('#customDiv value changed: ', selectedOption)
                 
                 document.getElementById('showSelected').innerHTML = selectedOption.text
             });
