@@ -53,15 +53,15 @@
         </form>
     </div>
 
-    <script src="/mcselect2.css"></script>
+    <script src="/mcselect2.js"></script>
     <script>
-        ms2 = new MCSelect2()
+        let ms2 = new MCSelect2()
 
         document.addEventListener('DOMContentLoaded', () => {
             ms2.attach('#mySelect');
 
             setInterval(() => {
-                document.getElementById('showSelected').innerHTML = ms2.selected
+                document.getElementById('showSelected').innerHTML = ms2.selectedOption.text
             }, 500);
         });
     </script>
