@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MCSelect2</title>
 
-    <link rel="stylesheet" href="/mcselect2.css" type="text/css">
+    <link rel="stylesheet" href="mcselect2.css" type="text/css">
 
     <style>
         * {
@@ -53,16 +53,31 @@
         </form>
     </div>
 
-    <script src="/mcselect2.js"></script>
+    <script src="mcselect2.js"></script>
     <script>
-        let ms2 = new MCSelect2()
+        let ms2 = new MCSelect2({
+            selectBackground: 'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(174,174,174,1) 91%)',
+            debug: false,
+            onTyping: (data) => { console.log('onTyping data: ', data) },
+        })
 
         document.addEventListener('DOMContentLoaded', () => {
             ms2.attach('#mySelect');
 
-            setInterval(() => {
+            
+            // Attach Event on standard select
+            /* document.getElementById('mySelect').addEventListener('change', (ev) => {
+                console.log('#mySelect value changed: ', ev.target.value)
                 document.getElementById('showSelected').innerHTML = ms2.selectedOption.text
-            }, 500);
+            }); */
+
+            // Attach Event On Custom Event
+            document.addEventListener('mcselect2-option-selected', (ev) => {
+                const selectedOption = ev.detail.selectedOption
+                console.log('#mySelect value changed: ', selectedOption)
+                
+                document.getElementById('showSelected').innerHTML = selectedOption.text
+            });
         });
     </script>
 </body>

@@ -1,5 +1,5 @@
 class MCSelect2 {
-    constructor() {
+    constructor(opts) {
         this.$el = null
         this.isToggled = false
         this.selectedOption = {
@@ -7,6 +7,27 @@ class MCSelect2 {
             value: '',
             $el: {}
         }
+
+        const defaultOpts = {
+            source: 'select',
+            name: 'mcselect2value',
+            id: 'mcselect2hidden',
+            hideOriginalSelect: true,
+            debug: false,
+            onOptionSelected: null,
+            onToggle: null,
+            onTyping: null,
+            processRow: ($option) => { 
+                return {   
+                    optionText: $option.text,
+                    optionValue: $option.value,
+                    isOptionSelected: $option.selected
+                }
+            },
+        }
+
+        this.opts = Object.assign({}, defaultOpts, opts)
+
         this.arrow = {
             right: `<?xml version="1.0" encoding="iso-8859-1"?>
             <!-- Generator: Adobe Illustrator 19.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
@@ -37,6 +58,12 @@ class MCSelect2 {
         };
     }
 
+    log(...params) {
+        if(this.opts.debug) {
+            console.log(...params)
+        }
+    }
+
     insertAfter(newElement, referenceElement) {
         referenceElement.parentNode.insertBefore(newElement, referenceElement.nextSibling);
     }
@@ -47,6 +74,18 @@ class MCSelect2 {
         document.getElementById('mcselect2div').style.display = this.isToggled ? 'block' : 'none';
 
         this.changeArrow()
+
+        document.dispatchEvent(new CustomEvent("mcselect2-toggled", { 
+            detail: {
+                isToggled: this.isToggled
+            } 
+        }))
+
+        if(this.isFunction(this.opts.onToggle)) {
+            this.opts.onToggle({
+                isToggled: this.isToggled
+            })
+        }
     }
 
     changeSelectDisplay() {
@@ -68,24 +107,30 @@ class MCSelect2 {
             throw new Error('MCSelect2 selector is wrong')
         }
 
-        if($el.tagName.toLowerCase() !== 'select') {
-            throw new Error(selector + ' must be a select element')
+        if($el.tagName.toLowerCase() !== 'select' && this.opts.source === 'select') {
+            throw new Error(selector + ' must be a select element if source is select')
         }
-
-        $el.style.position = 'relative';
 
         let $wrapper = document.createElement('div')
         $wrapper.id = 'mcselect2wrapper';
-        $wrapper.setAttribute('class', 'mcselect2--wrapper');
+        $wrapper.classList.add('mcselect2--wrapper');
 
         let $select2Div = document.createElement('div')
         $select2Div.id = 'mcselect2div';
-        $select2Div.setAttribute('class', 'mcselect2--select');
+        $select2Div.classList.add('mcselect2--select');
 
         let $select2Display = document.createElement('div')
         this.$select2Display = $select2Display
         $select2Display.id = 'mcselect2Display';
-        $select2Display.setAttribute('class', 'mcselect2--select-display');
+        $select2Display.classList.add('mcselect2--select-display');
+        
+        if(this.opts.selectBackground) {
+            $select2Display.style.background = this.opts.selectBackground;
+        }
+
+        if(this.opts.selectColor) {
+            $select2Display.style.color = this.opts.selectColor;
+        }
 
         $select2Display.onclick = (ev) => {
             this.toggle()
@@ -97,34 +142,59 @@ class MCSelect2 {
 
         let $select2Input = document.createElement('input')
         $select2Input.type = 'text';
-        $select2Input.setAttribute('class', 'mcselect2--input');
+        $select2Input.classList.add('mcselect2--input');
         $select2Input.name = 'mcselect2input';
         $select2Input.id = 'mcselect2input';
 
-        $select2Input.oninput = this.search
-        $select2Input.onpaste = this.search
-        $select2Input.onchange = this.search
+        $select2Input.oninput = this.search.bind(this)
+        $select2Input.onpaste = this.search.bind(this)
+        $select2Input.onchange = this.search.bind(this)
 
         $select2Div.appendChild($select2Input)
 
         let $optionsContainer = document.createElement('div')
-        $optionsContainer.setAttribute('class', 'mcselect2--options-container')
+        $optionsContainer.classList.add('mcselect2--options-container')
 
-        Array.from($el.options).forEach(($option) => {
-            let optionText = $option.text;
-            let optionValue = $option.value;
-            let isOptionSelected = $option.selected;
+        let data = []
+
+        if(this.opts.source === 'select') {
+            data = $el.options
+        } else {
+            this.$hiddenOption = document.createElement('input');
+            this.$hiddenOption.type = 'hidden';
+            
+            if(!this.opts.name || this.opts.name === '') {
+                throw new Error('Missing name for mcselect2 input select')
+            }
+            
+            this.$hiddenOption.name = this.opts.name
+
+            if(this.opts.id) {
+                this.$hiddenOption.id = this.opts.id
+            }
+
+            $wrapper.appendChild(this.$hiddenOption)
+
+            data = this.opts.data
+        }
+
+        Array.from(data).forEach(($option) => {
+            if(!this.isFunction(this.opts.processRow)) {
+                throw new Error('processRow is not a function')
+            }
+
+            let { optionText, optionValue, isOptionSelected } = this.opts.processRow($option)
 
             let $optionDiv = document.createElement('div')
-            $optionDiv.setAttribute('class', 'mcselect2--option')
+            $optionDiv.classList.add('mcselect2--option')
 
             $optionDiv.dataset.value = optionValue;
             $optionDiv.dataset.content = this.sanitizeOption(optionText);
             $optionDiv.innerHTML = optionText;
 
             $optionDiv.onclick = (ev) => {
-                console.log('Option Text: ', ev.target.innerHTML)
-                console.log('Option Value: ', ev.target.dataset.value)
+                this.log('Option Text: ', ev.target.innerHTML)
+                this.log('Option Value: ', ev.target.dataset.value)
 
                 this.selectOption(ev.target)
                 this.changeSelectDisplay()
@@ -148,29 +218,81 @@ class MCSelect2 {
 
         $select2Div.style.top = $select2Display.offsetHeight + 'px';
 
-        $el.style.top = '-9999px';
-        $el.style.left = '-9999px';
-        $el.style.zIndex = '-1';
+        if(this.opts.hideOriginalSelect) {
+            $el.style.position = 'absolute';
+            $el.style.top = '-9999px';
+            $el.style.left = '-9999px';
+            $el.style.zIndex = '-1';   
+        }
+    }
+
+    setFormInputValue(value) {
+        if(this.opts.source === 'select') {
+            this.$el.value = value
+        } else {
+            this.$hiddenOption.value = value
+        }
+    }
+
+    getFormInputValue() {
+        return this.opts.source === 'select' ? this.$el.value : this.$hiddenOption.value;
     }
 
     selectOption($option) {
         let optionText = $option.textContent;
         let optionValue = $option.dataset.value;
 
-        this.$el.value = optionValue
+        this.setFormInputValue(optionValue)
+
         this.selectedOption = {
             $el: $option,
             text: optionText, 
             value: optionValue
         }
+
+        this.$el.dispatchEvent(new Event("change"));
+        document.dispatchEvent(new CustomEvent("mcselect2-option-selected", { 
+            detail: {
+                selectedOption: this.selectedOption
+            } 
+        }))
+
+        if(this.isFunction(this.opts.onOptionSelected)) {
+            this.opts.onOptionSelected({
+                selectedOption: this.selectedOption
+            })
+        }
+
+        this.log('$el.text: ', optionText)
+        this.log('$el.value: ', this.getFormInputValue())
+    }
+
+    isFunction(v) {
+        return v && typeof v === 'function'
     }
 
     search(ev) {
-        let $search = ev.target.value
+        const $query = ev.target.value
 
-        console.log('You Wrote: ', $search)
+        this.log('You Wrote: ', $query)
 
-        if($search === '') {
+        document.dispatchEvent(new CustomEvent("mcselect2-on-typing", {
+            query: $query,
+            target: ev.target
+        }))
+
+        if(this.isFunction(this.opts.onTyping)) {
+            const returnValue = this.opts.onTyping({
+                query: $query,
+                target: ev.target
+            })
+
+            if(returnValue === false) {
+                return;
+            }
+        }
+
+        if($query === '') {
             Array.from(document.querySelectorAll(`div.mcselect2--option`)).forEach(($option) => {
                 $option.style.display = 'block';
             })
@@ -179,15 +301,15 @@ class MCSelect2 {
         Array.from(document.querySelectorAll(`div.mcselect2--option`)).forEach(($option) => {
             $option.style.display = 'none';
 
-            if($option.dataset.content.includes($search)) {
-                console.log('$option.dataset.content.includes: ', $option.dataset.content, $search)
+            if($option.dataset.content.includes($query)) {
+                this.log('$option.dataset.content.includes: ', $option.dataset.content, $query)
                 $option.style.display = 'block';
             }
         })
     }
 
     sanitizeOption(text) {
-        /* console.log('Text: ', text,text.toLowerCase()
+        /* this.log('Text: ', text,text.toLowerCase()
             .replace(/[\u{0080}-\u{10FFFF}]/gu,"")
             .replace(/([.*+?^=!:${}()|\[\]\/\\])/g, '')
             .replace(/\s/g, '_')) */
