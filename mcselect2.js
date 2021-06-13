@@ -429,14 +429,28 @@ class MCSelect2 {
                 target: ev.target
             })
 
-            if(this.opts.refreshOnTyping) {
-                this.log('Calling refresh()')
+            if(returnValue instanceof Promise) {
+                this.log('onTyping is Promise')
 
-                return this.refresh();
-            }
+                returnValue.then(data => {
+                    this.setData(data);
 
-            if(returnValue === false) {
-                return;
+                    if(this.opts.refreshOnTyping) {
+                        this.log('Calling refresh() in async')
+        
+                        return this.refresh();
+                    }
+                })
+            } else {
+                if(this.opts.refreshOnTyping) {
+                    this.log('Calling refresh()')
+    
+                    return this.refresh();
+                }
+    
+                if(returnValue === false) {
+                    return;
+                }
             }
         }
 

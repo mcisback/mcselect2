@@ -75,7 +75,7 @@
         const ms2 = new MCSelect2({
             selectBackground: 'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(174,174,174,1) 91%)',
             debug: false,
-            onTyping: (data) => { console.log('MS2, onTyping data: ', data) },
+            onTyping: ($this, data) => { console.log('MS2, onTyping data: ', data) },
         })
 
         const ms3 = new MCSelect2({
@@ -136,28 +136,7 @@
 
                 $this.resetToOriginalData()
 
-                /* if(query === '') {
-                    console.log('query is empty')
-
-                    $this.resetToOriginalData()
-
-                    console.log('MS3, reset data to original data: ', $this.getOriginalData(), $this.getData())
-
-                    return false;
-                }
-
                 let $data = $this.getData();
-
-                if($data.length === 0) {
-                    console.log('MS3, reset data to original data: ', $this.originalData, $this.data)
-
-                    $this.resetToOriginalData();
-                    $data = $this.getData();
-                } */
-
-                let $data = $this.getData();
-
-                // globalData = $data;
 
                 console.log('MS3, $this: ', $this)
                 console.log('MS3, onTyping data: ', typingData)
@@ -208,7 +187,24 @@
                     isOptionSelected: false,
                 }
             },
-            onTyping: (data) => { console.log('MS3, onTyping data: ', data) },
+            onTyping: async ($this, data) => { 
+                let { query, target } = data;
+
+                console.log('MS3, onTyping data: ', data);
+                console.log('Fetching: ', `https://jsonplaceholder.typicode.com/users?q=${query}`);
+
+                return await fetch(`https://jsonplaceholder.typicode.com/users?q=${query}`)
+                    .then(response => response.json())
+                    .then(json => json.map((row) => {
+                            return {
+                                id: row.id,
+                                username: row.username,
+                            }
+                        })
+                    )
+                    .catch((error) => console.log('Fetch Error: ', error))
+            },
+            refreshOnTyping: true,
         })
 
         document.addEventListener('DOMContentLoaded', () => {
