@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCSelect2</title>
+
+    <link rel="stylesheet" href="/mcselect2.css" type="text/css">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <form action="save">
+          You Selected: 
+          <span id="showSelected"></span>
+
+          <br>
+          <br>
+          <br>
+
+        <select name="mySelect" id="mySelect">
+            <option value="58202">Paganico Sabino</option>
+            <option value="58203">Pagazzano</option>
+            <option value="58204">Pagliara</option>
+            <option value="58205">Pagliare</option>
+            <option value="58206">Pagliare</option>
+            <option value="58207">Pagliarelle</option>
+            <option value="58208">Pagliarone</option>
+            <option value="58209">Paglieta</option>
+            <option value="58210">Pagnacco</option>
+            <option value="58211">Pagno</option>
+            <option value="58212">Pagnona</option>
+            <option value="58213">Pago Veiano</option>
+            <option value="58214">Pago del Vallo di Lauro</option>
+            <option value="58215">Paisco Loveno</option>
+            <option value="58216">Paitone</option>
+            <option value="58217">Paladina</option>
+            <option value="58218">Palagano</option>
+            <option value="58219">Palagianello</option>
+            <option value="58220">Palagiano</option>
+            <option value="58221">Palagonia</option>
+          </select>
+        </form>
+    </div>
+
+    <script src="/mcselect2.css"></script>
+    <script>
+        ms2 = new MCSelect2()
+
+        document.addEventListener('DOMContentLoaded', () => {
+            ms2.attach('#mySelect');
+
+            setInterval(() => {
+                document.getElementById('showSelected').innerHTML = ms2.selected
+            }, 500);
+        });
+    </script>
+</body>
+</html>

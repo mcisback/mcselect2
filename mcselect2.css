@@ -1,0 +1,66 @@
+/* MCSelect Classes */
+
+.mcselect2--wrapper {
+    display: block;
+    position: relative;
+    max-width: 20rem;
+}
+
+.mcselect2--select-display {
+    display: flex;
+    flex-direction: row;
+    background-color: gray;
+    color: whitesmoke;
+    padding: 1rem;
+    cursor: pointer;
+    justify-content: space-between;
+    align-items: center;
+
+    -webkit-border-radius: 20px;
+    -moz-border-radius: 20px;
+    border-radius: 20px;
+}
+
+.mcselect2--select-display .arrow {
+    border-left: thin solid black;
+}
+
+.mcselect2--select {
+    display: none;
+    position: absolute;
+    width: 100%;
+    top: 0;
+    left: 0;
+    background-color: white;
+    color: black;
+
+    -webkit-box-shadow: 5px 8px 45px 0px rgba(0,0,0,0.4);
+    -moz-box-shadow: 5px 8px 45px 0px rgba(0,0,0,0.4);
+    box-shadow: 5px 8px 45px 0px rgba(0,0,0,0.4);
+}
+
+.mcselect2--options-container {
+    overflow-y: scroll;
+    overflow-x: hidden;
+    max-height: 20em;
+    width: 100%;
+    padding: 0.5em;
+}
+
+.mcselect2--option {
+    display: block;
+    cursor: pointer;
+    padding: 0.5em;
+    margin: 0.5em 0;
+}
+
+.mcselect2--option:hover {
+    background-color: aquamarine;
+    color: white;
+}
+
+.mcselect2--input {
+    width: 80%;
+    padding: 0.5em;
+    margin: 0.5em;
+}
