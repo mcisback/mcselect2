@@ -28,6 +28,11 @@
           <br>
           <br>
 
+          Selected User Info:
+          <span id="userInfo"></span>
+
+          <br><br><br>
+
         <select name="mySelect" id="mySelect">
             <option value="58202">Paganico Sabino</option>
             <option value="58203">Pagazzano</option>
@@ -65,6 +70,7 @@
 
     <script src="mcselect2.js"></script>
     <script>
+        // var globalData = null;
         // Get Data From Select Element
         const ms2 = new MCSelect2({
             selectBackground: 'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(174,174,174,1) 91%)',
@@ -76,6 +82,7 @@
             selectBackground: 'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(174,174,174,1) 91%)',
             debug: false,
             source: 'data',
+            name: 'input-2',
             data: () => {
                 return [
                     {
@@ -95,6 +102,22 @@
                         id: 4,
                         text: 'Yogurt',
                     },
+                    {
+                        id: 5,
+                        text: 'Korea',
+                    },
+                    {
+                        id: 6,
+                        text: 'Kim',
+                    },
+                    {
+                        id: 7,
+                        text: 'Sapporo',
+                    },
+                    {
+                        id: 8,
+                        text: 'Yerevan',
+                    },
                 ]
             },
             hideOriginalSelect: false,
@@ -107,7 +130,49 @@
                     isOptionSelected: $row.selected ? $row.selected : false,
                 }
             },
-            onTyping: (data) => { console.log('MS3, onTyping data: ', data) },
+            onTyping: ($this, typingData) => {
+                const { query, target } = typingData;
+
+
+                $this.resetToOriginalData()
+
+                /* if(query === '') {
+                    console.log('query is empty')
+
+                    $this.resetToOriginalData()
+
+                    console.log('MS3, reset data to original data: ', $this.getOriginalData(), $this.getData())
+
+                    return false;
+                }
+
+                let $data = $this.getData();
+
+                if($data.length === 0) {
+                    console.log('MS3, reset data to original data: ', $this.originalData, $this.data)
+
+                    $this.resetToOriginalData();
+                    $data = $this.getData();
+                } */
+
+                let $data = $this.getData();
+
+                // globalData = $data;
+
+                console.log('MS3, $this: ', $this)
+                console.log('MS3, onTyping data: ', typingData)
+                console.log('MS3, data: ', $data) 
+                
+                const newData = $data.filter(obj => obj.text.toLowerCase().includes(query))
+
+                console.log('MS3, newData: ', newData); 
+                console.log('MS3, filteredData: ', $data.filter(obj => obj.text.toLowerCase().includes(query))); 
+
+                $this.setData(Array.from(newData));
+
+                return false;
+            },
+            refreshOnTyping: true,
         })
 
         // Fetch Data From Api
@@ -116,9 +181,10 @@
             debug: true,
             source: 'data',
             isAsync: true,
+            name: 'input-4',
             data: async () => {
                 try {
-                    var $data = await fetch('https://jsonplaceholder.typicode.com/users')
+                    return await fetch('https://jsonplaceholder.typicode.com/users')
                         .then(response => response.json())
                         .then(json => json.map((row) => {
                                 return {
@@ -126,14 +192,11 @@
                                     username: row.username,
                                 }
                             })
-                        );
+                        )
+                        .catch((error) => console.log('Fetch Error: ', error))
                 } catch (error) {
                     console.log('Fetch Error: ', error);
                 }
-                
-                console.log('$data1: ', $data);
-
-                return $data;
             },
             hideOriginalSelect: false,
             processRow: ($row) => {
@@ -174,6 +237,28 @@
                 console.log('#customDiv value changed: ', selectedOption)
                 
                 document.getElementById('showSelected').innerHTML = selectedOption.text
+            });
+
+            // Attach Event On Custom Event
+            ms4.addEventListener('mcselect2-option-selected', (ev) => {
+                const selectedOption = ev.detail.selectedOption
+                console.log('#customDiv2 value changed: ', selectedOption)
+                
+                document.getElementById('showSelected').innerHTML = selectedOption.text
+
+                fetch(`https://jsonplaceholder.typicode.com/users/${selectedOption.value}`)
+                        .then(response => response.json())
+                        .then(json => {
+                            document.getElementById('userInfo').innerHTML = `
+                                <pre>
+                                    name: ${json.name}
+                                    userame: ${json.username}
+                                    email: ${json.email}
+                                    phone: ${json.phone}
+                                    website: ${json.website}
+                                </pre>
+                            `;
+                        })
             });
         });
     </script>

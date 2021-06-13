@@ -8,14 +8,11 @@ class MCSelect2 {
             $el: {}
         }
 
-        this.uuid = this.uuidv4();
-
         const defaultOpts = {
             source: 'select',
-            name: 'mcselect2value',
-            id: 'mcselect2hidden',
             isAsync: false,
             hideOriginalSelect: true,
+            refreshOnTyping: false,
             debug: false,
             onOptionSelected: null,
             onToggle: null,
@@ -30,6 +27,14 @@ class MCSelect2 {
         }
 
         this.opts = Object.assign({}, defaultOpts, opts)
+
+        if(!this.opts.uuid) {
+            this.uuid = this.uuidv4();
+        } else {
+            this.uuid = this.opts.uuid;
+        }
+
+        this.log('Init MCSelect2: ', this.uuid);
 
         this.arrow = {
             right: `<?xml version="1.0" encoding="iso-8859-1"?>
@@ -91,7 +96,7 @@ class MCSelect2 {
         })
 
         if(this.isFunction(this.opts.onToggle)) {
-            this.opts.onToggle({
+            this.opts.onToggle(this, {
                 isToggled: this.isToggled
             })
         }
@@ -144,6 +149,7 @@ class MCSelect2 {
         $wrapper.classList.add('mcselect2--wrapper');
 
         let $select2Div = document.createElement('div')
+        this.$select2Div = $select2Div;
         $select2Div.id = 'mcselect2div-' + this.uuid;
         $select2Div.classList.add('mcselect2--select');
 
@@ -188,7 +194,7 @@ class MCSelect2 {
 
         if(this.opts.source === 'select') {
             this.data = $el.options
-        } else {
+        } else if(this.opts.source === 'data') {
             this.$hiddenOption = document.createElement('input');
             this.$hiddenOption.type = 'hidden';
             
@@ -196,10 +202,16 @@ class MCSelect2 {
                 throw new Error('Missing name for mcselect2 input select')
             }
             
-            this.$hiddenOption.name = this.opts.name
+            if(this.opts.name) {
+                this.$hiddenOption.name = this.opts.name
+            } else {
+                console.log('[!] WARNING: name is empty, so you will not be able to read sent data from server');
+            }
 
             if(this.opts.id) {
                 this.$hiddenOption.id = this.opts.id
+            } else {
+                this.$hiddenOption.id = 'mcselect2hidden-' + this.uuid;
             }
 
             $wrapper.appendChild(this.$hiddenOption)
@@ -211,33 +223,55 @@ class MCSelect2 {
             if(this.opts.isAsync) {
                 this.log('Async Function');
 
-                Promise.all([
+                (async () => {
+                    //Optional "await"
                     this.opts.data()
-                ]).then($data => this.setData($data))
-            } else {
-                this.data = this.opts.data()
-            }
-        }
+                        .then(($data) => {
+                            this.log('$data, this: ', $data, this);
 
-        this.log('data: ', this.data);
+                            this.setData($data, true);
+
+                            this.renderRows();
+
+                            this.finishAttach();
+
+                        })
+                        .catch((error) => {
+                            return error;
+                        })
+                })()
+            } else {
+                this.setData(this.opts.data(), true);
+            }
+        } else {
+            throw new Error('Source not supported');
+        }
 
         this.renderRows();
 
-        $select2Div.appendChild($optionsContainer)
+        this.finishAttach();
+    }
 
-        this.insertAfter($wrapper, $el)
+    finishAttach() {
+        this.$select2Div.appendChild(this.$optionsContainer)
 
-        $wrapper.appendChild($el)
-        $wrapper.appendChild($select2Div)
+        this.insertAfter(this.$wrapper, this.$el)
 
-        $select2Div.style.top = $select2Display.offsetHeight + 'px';
+        this.$wrapper.appendChild(this.$el)
+        this.$wrapper.appendChild(this.$select2Div)
+
+        this.$select2Div.style.top = this.$select2Display.offsetHeight + 'px';
 
         if(this.opts.hideOriginalSelect) {
-            $el.style.position = 'absolute';
-            $el.style.top = '-9999px';
-            $el.style.left = '-9999px';
-            $el.style.zIndex = '-1';   
+            this.$el.style.position = 'absolute';
+            this.$el.style.top = '-9999px';
+            this.$el.style.left = '-9999px';
+            this.$el.style.zIndex = '-1';   
         }
+    }
+
+    resetToOriginalData() {
+        this.data = [...this.originalData];
     }
 
     renderRows() {
@@ -280,15 +314,55 @@ class MCSelect2 {
     }
 
     refresh() {
-        Array.from(document.querySelectorAll(`div.mcselect2--option`)).forEach(($option) => {
+        this.log('Refreshing...')
+
+        const options = this.$wrapper.querySelectorAll(`div.mcselect2--option`);
+        /* const diff = this.data.length - options.length
+
+        this.log('Diff is: ', diff);
+
+        // ? HINT: Maybe use diff between data and querySelector to speed up and low memory usage?
+        if(diff < 0) {
+            for(let i = 0; i < Math.abs(diff); i++) {
+                this.log('Removing option: ', options[i]);
+
+                options[i].parentNode.removeChild(options[i]);
+            }
+        } else if(diff > 0) {
+            const newData = this.data.slice(options.length - 1, diff - 1);
+
+            for(let i = 0; i < Math.abs(diff); i++) {
+                this.log('Adding option: ', newData[i]);
+
+                this.renderRow(newData[i]);
+            }
+        } else {
+            this.renderRows();
+        } */
+
+        Array.from(options).forEach(($option) => {
             $option.parentNode.removeChild($option);
         });
 
         this.renderRows();
     }
 
-    setData(data) {
+    setData(data, setOriginalData = false) {
         this.data = data;
+
+        if(setOriginalData) {
+            this.originalData = [...this.data];
+        }
+
+        this.log('data: ', this.data);
+    }
+
+    getData() {
+        return this.data;
+    }
+
+    getOriginalData() {
+        return this.originalData;
     }
 
     getElementBySource() {
@@ -300,6 +374,7 @@ class MCSelect2 {
             this.$el.value = value
         } else {
             this.$hiddenOption.value = value
+            this.log('Setting $hiddenOption Value to: ', value, this.$hiddenOption)
         }
     }
 
@@ -325,7 +400,7 @@ class MCSelect2 {
         })
 
         if(this.isFunction(this.opts.onOptionSelected)) {
-            this.opts.onOptionSelected({
+            this.opts.onOptionSelected(this, {
                 selectedOption: this.selectedOption
             })
         }
@@ -349,10 +424,16 @@ class MCSelect2 {
         });
 
         if(this.isFunction(this.opts.onTyping)) {
-            const returnValue = this.opts.onTyping({
+            const returnValue = this.opts.onTyping(this, {
                 query: $query,
                 target: ev.target
             })
+
+            if(this.opts.refreshOnTyping) {
+                this.log('Calling refresh()')
+
+                return this.refresh();
+            }
 
             if(returnValue === false) {
                 return;
@@ -360,12 +441,12 @@ class MCSelect2 {
         }
 
         if($query === '') {
-            Array.from(document.querySelectorAll(`div.mcselect2--option`)).forEach(($option) => {
+            Array.from(this.$wrapper.querySelectorAll(`div.mcselect2--option`)).forEach(($option) => {
                 $option.style.display = 'block';
             })
         }
         
-        Array.from(document.querySelectorAll(`div.mcselect2--option`)).forEach(($option) => {
+        Array.from(this.$wrapper.querySelectorAll(`div.mcselect2--option`)).forEach(($option) => {
             $option.style.display = 'none';
 
             if($option.dataset.content.includes($query)) {
