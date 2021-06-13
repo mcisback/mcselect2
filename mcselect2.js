@@ -181,12 +181,13 @@ class MCSelect2 {
         $select2Div.appendChild($select2Input)
 
         let $optionsContainer = document.createElement('div')
+        this.$optionsContainer = $optionsContainer
         $optionsContainer.classList.add('mcselect2--options-container')
 
-        let data = []
+        this.data = []
 
         if(this.opts.source === 'select') {
-            data = $el.options
+            this.data = $el.options
         } else {
             this.$hiddenOption = document.createElement('input');
             this.$hiddenOption.type = 'hidden';
@@ -208,49 +209,19 @@ class MCSelect2 {
             }
 
             if(this.opts.isAsync) {
-                this.opts.data()
-                    .then(d => {
-                        data = d
-                    })
+                this.log('Async Function');
+
+                Promise.all([
+                    this.opts.data()
+                ]).then($data => this.setData($data))
             } else {
-                data = this.opts.data()
+                this.data = this.opts.data()
             }
         }
 
-        this.log('data: ', data);
+        this.log('data: ', this.data);
 
-        Array.from(data).forEach(($option) => {
-            this.log('$option: ', $option);
-
-            if(!this.isFunction(this.opts.processRow)) {
-                throw new Error('processRow is not a function')
-            }
-
-            let { optionValue, optionText, isOptionSelected } = this.opts.processRow($option)
-
-            let $optionDiv = document.createElement('div')
-            $optionDiv.classList.add('mcselect2--option')
-
-            $optionDiv.dataset.value = optionValue;
-            $optionDiv.dataset.content = this.sanitizeOption(optionText);
-            $optionDiv.innerHTML = optionText;
-
-            $optionDiv.onclick = (ev) => {
-                this.log('Option Text: ', ev.target.innerHTML)
-                this.log('Option Value: ', ev.target.dataset.value)
-
-                this.selectOption(ev.target)
-                this.changeSelectDisplay()
-                this.toggle()
-            }
-            
-            if(isOptionSelected) {
-                this.selectOption($optionDiv)
-                this.changeSelectDisplay()
-            }
-            
-            $optionsContainer.appendChild($optionDiv)
-        });
+        this.renderRows();
 
         $select2Div.appendChild($optionsContainer)
 
@@ -267,6 +238,57 @@ class MCSelect2 {
             $el.style.left = '-9999px';
             $el.style.zIndex = '-1';   
         }
+    }
+
+    renderRows() {
+        Array.from(this.data).forEach(($option) => {
+            this.renderRow($option);
+        });
+    }
+
+    renderRow($option) {
+        this.log('$option: ', $option);
+
+        if(!this.isFunction(this.opts.processRow)) {
+            throw new Error('processRow is not a function')
+        }
+
+        const { optionValue, optionText, isOptionSelected } = this.opts.processRow($option)
+
+        let $optionDiv = document.createElement('div')
+        $optionDiv.classList.add('mcselect2--option')
+
+        $optionDiv.dataset.value = optionValue;
+        $optionDiv.dataset.content = this.sanitizeOption(optionText);
+        $optionDiv.innerHTML = optionText;
+
+        $optionDiv.onclick = (ev) => {
+            this.log('Option Text: ', ev.target.innerHTML)
+            this.log('Option Value: ', ev.target.dataset.value)
+
+            this.selectOption(ev.target)
+            this.changeSelectDisplay()
+            this.toggle()
+        }
+        
+        if(isOptionSelected) {
+            this.selectOption($optionDiv)
+            this.changeSelectDisplay()
+        }
+        
+        this.$optionsContainer.appendChild($optionDiv)
+    }
+
+    refresh() {
+        Array.from(document.querySelectorAll(`div.mcselect2--option`)).forEach(($option) => {
+            $option.parentNode.removeChild($option);
+        });
+
+        this.renderRows();
+    }
+
+    setData(data) {
+        this.data = data;
     }
 
     getElementBySource() {
